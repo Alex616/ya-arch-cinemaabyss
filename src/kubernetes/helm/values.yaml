@@ -5,7 +5,7 @@ global:
 
 # Image pull secrets
 imagePullSecrets:
-  dockerconfigjson: ewoJImF1dGhzIjogewoJCSJnaGNyLmlvIjogewoJCQkiYXV0aCI6
+  dockerconfigjson: ewoJImF1dGhzIjogewoJCSJkb2NrZXItbWlycm9yLmFydGlmYWN0b3J5LmF0Lml2aS5ydSI6IHsKCQkJImF1dGgiOiAiWVdsMllXNXZkam8yWWtwVlF5RnpiVGxOYVRoQlkwMVNWbkp2UUV0ZmVEY2hjMmdoUmtBPSIKCQl9LAoJCSJnaGNyLmlvIjogewoJCQkiYXV0aCI6ICJRV3hsZURZeE5qcG5hSEJmTjNWVFFqTlNUbnB3TjBkaFJsbHNPSFJTWlV4WGVqZzNlRlZyWVZOU01XSm5SbTlhIgoJCX0sCgkJImdpdGxhYi1yZWdpc3RyeS5kZXYuaXZpLnJ1IjogewoJCQkiYXV0aCI6ICJZV2wyWVc1dmRqbzJZa3BWUXlGemJUbE5hVGhCWTAxU1ZuSnZRRXRmZURjaGMyZ2hSa0E9IgoJCX0sCgkJImdpdGxhYi5kZXYuaXZpLnJ1IjogewoJCQkiYXV0aCI6ICJZV2wyWVc1dmRqbzJZa3BWUXlGemJUbE5hVGhCWTAxU1ZuSnZRRXRmZURjaGMyZ2hSa0E9IgoJCX0KCX0sCgkiY3VycmVudENvbnRleHQiOiAiY29saW1hIiwKCSJjbGlQbHVnaW5zRXh0cmFEaXJzIjogWwoJCSIvb3B0L2hvbWVicmV3L2xpYi9kb2NrZXIvY2xpLXBsdWdpbnMiCgldCn0=
 # Database configuration
 database:
   host: postgres
@@ -33,7 +33,7 @@ database:
 monolith:
   enabled: true
   image:
-    repository: ghcr.io/db-exp/cinemaabysstest/monolith
+    repository: ghcr.io/alex616/ya-arch-cinemaabyss/monolith
     tag: latest
     pullPolicy: Always
   replicas: 1
@@ -53,7 +53,7 @@ monolith:
 proxyService:
   enabled: true
   image:
-    repository: ghcr.io/db-exp/cinemaabysstest/proxy-service
+    repository: ghcr.io/alex616/ya-arch-cinemaabyss/proxy-service
     tag: latest
     pullPolicy: Always
   replicas: 1
@@ -73,7 +73,7 @@ proxyService:
 moviesService:
   enabled: true
   image:
-    repository: ghcr.io/db-exp/cinemaabysstest/movies-service
+    repository: ghcr.io/alex616/ya-arch-cinemaabyss/movies-service
     tag: latest
     pullPolicy: Always
   replicas: 1
@@ -93,7 +93,7 @@ moviesService:
 eventsService:
   enabled: true
   image:
-    repository: ghcr.io/db-exp/cinemaabysstest/events-service
+    repository: ghcr.io/alex616/ya-arch-cinemaabyss/events-service
     tag: latest
     pullPolicy: Always
   replicas: 1
@@ -119,8 +119,8 @@ kafka:
   replicas: 1
   resources:
     limits:
-      cpu: 1000m
-      memory: 1Gi
+      cpu: 2000m
+      memory: 2Gi
     requests:
       cpu: 200m
       memory: 512Mi
