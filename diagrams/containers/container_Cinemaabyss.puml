@@ -1,0 +1,138 @@
+@startuml
+!include C4_Container.puml
+Person(user, "Пользователь", "Пользователь системы")
+
+System_Ext(recommendationSystem, "Система рекомендаций фильмов", "Внешняя система, предоставляющая рекомендации фильмов на основе предпочтений пользователя")
+System_Ext(bankingSystem, "Банковская система", "Внешняя банковская система для обработки платежей пользователей")
+System_Ext(openSourceMovie, "Открытый источник фильмов", "Внешний источник фильмов для потоковой передачи")
+Person_Ext(partner, "Партнеры по контенту", "Поставщики фильмов и медиаконтента")
+
+
+Boundary(cinemaAbyss, "Cinemaabyss", "Онлайн-платформа аггрегатор") {
+
+  System_Boundary(frontends, "Frontend Клиенты") {
+      Container(mobile_app, "Мобильное приложение", "Flutter, Native", "Позволяет пользователям просматривать и транслировать фильмы на мобильных устройствах")
+      Container(web_app, "Веб-приложение", "React", "Позволяет пользователям просматривать и транслировать фильмы через веб-браузер")
+      Container(tv_app, "ТВ-приложение", "React", "Позволяет пользователям просматривать и транслировать фильмы на телевизорах")
+      Container(mobile_bff, "Baccken для мобильного приложения", "GO", "Обеспечивает API для мобильного приложения Cinemaabyss")
+      Container(web_bff, "Backend для веб-приложения", "GO", "Обеспечивает API для веб-приложения Cinemaabyss")
+      Container(tv_bff, "Backend для ТВ-приложения", "GO", "Обеспечивает API для ТВ-приложения Cinemaabyss")
+
+      Rel(user, mobile_app, "Использует")
+      Rel(user, web_app, "Использует")
+      Rel(user, tv_app, "Использует")
+      Rel(mobile_app, mobile_bff, "Вызывает API")
+      Rel(web_app, web_bff, "Вызывает API")
+      Rel(tv_app, tv_bff, "Вызывает API")
+  }
+  Container(api_gateway, "API Gateway", "GO", "Единая точка входа для всех клиентов Cinemaabyss")
+  ContainerQueue(event_bus, "Шина событий", "Kafka", "Обрабатывает асинхронные события между сервисами")
+
+  Rel(mobile_bff, api_gateway, "Вызывает API")
+  Rel(web_bff, api_gateway, "Вызывает API")
+  Rel(tv_bff, api_gateway, "Вызывает API")
+
+
+  System_Boundary(user_services, "Пользовательские сервисы") {
+      Container(auth_service, "Сервис аутентификации", "GO", "Обрабатывает регистрацию, вход и управление сессиями пользователей")
+      Container(user_profile_service, "Сервис профилей пользователей", "GO", "Управляет информацией профиля пользователя, настройками,избранным")
+      ContainerDb(user_profile_db, "База данных профилей пользователей", "PostgreSQL", "Хранит информацию о профилях пользователей")
+      Container(watch_history_service, "Сервис истории просмотров", "GO", "Отслеживает и управляет историей просмотров пользователей")
+      ContainerQueue(watch_history_event_bus, "Шина событий истории просмотров", "Kafka", "Обрабатывает асинхронные события истории просмотров между сервисами")
+      Container(watch_history_connsumer_service, "Сервис потребления истории просмотров", "GO", "Потребляет события истории просмотров и обновляет базу данных")
+      ContainerDb(watch_history_db, "База данных истории просмотров", "PostgreSQL", "Хранит информацию о просмотренных фильмах пользователями")
+
+      Rel(api_gateway, auth_service, "Вызывает API")
+      Rel(api_gateway, user_profile_service, "Вызывает API")
+      Rel(user_profile_service, user_profile_db, "Читает/пишет информацию о профилях пользователей")
+      Rel(api_gateway, watch_history_service, "Вызывает API")
+      Rel(watch_history_service, watch_history_event_bus, "Публикует события о просмотренных фильмах")
+      Rel(watch_history_event_bus, watch_history_connsumer_service, "Читает события о просмотренных фильмах")
+      Rel(watch_history_connsumer_service, watch_history_db, "Читает/пишет информацию о просмотренных фильмах")
+      Rel(watch_history_connsumer_service, event_bus, "Публикует события о просмотренных фильмах")
+  }
+
+  System_Boundary(billing_services, "Сервисы биллинга") {
+      Container(payment_service, "Платежный сервис", "GO", "Обрабатывает платежи и управление подписками пользователей")
+      ContainerDb(payment_service_db, "База данных биллинга", "PostgreSQL", "Хранит информацию о платежных аккаунтах и статусах пользовательских транзакций")
+      Container(billing_service, "Сервис выставления счетов", "GO", "Генерирует счета и управляет историей транзакций пользователей")
+      ContainerDb(billing_service_db, "База данных выставления счетов", "PostgreSQL", "Хранит информацию о счетах")
+      Container(sunscription_service, "Сервис подписок", "GO", "Управляет продлениями подписок")
+      ContainerDb(sunscription_service_db, "База данных подписок", "PostgreSQL", "Хранит информацию о подписках пользователей")
+      ContainerQueue(billing_event_bus, "Шина событий биллинга", "Rabbit MQ", "Обрабатывает асинхронные события между сервисами биллинга")
+
+      Rel(api_gateway, billing_service, "Вызывает API")
+      Rel(billing_service, billing_service_db, "Читает/пишет информацию о счетах")
+      Rel(billing_service, billing_event_bus, "Публикует события о выставлении счетов")
+      Rel(billing_event_bus, payment_service, "Читает события о выставлении счетов")
+      Rel(payment_service, payment_service_db, "Читает/пишет информацию о платежах")
+      Rel(payment_service, sunscription_service, "Обновляет/создает информацию о подписках")
+      Rel(sunscription_service, sunscription_service_db, "Читает/пишет информацию о подписках, создает продление")
+      Rel(subscription_service, event_bus, "Публикует события о создании новой подписки")
+      Rel(payment_service, bankingSystem, "Отправляет запрос на обработку платежа")
+      Rel(bankingSystem, payment_service, "Возвращает результат обработки платежа")
+      Rel(payment_service, payment_service_db, "Обновляет статус транзакции")
+      Rel(payment_service, billing_service, "Отправляет подтверждение платежа")
+      Rel(billing_service, billing_service_db, "Обновляет статус счета")
+      Rel(billing_service, event_bus, "Публикует события о завершении покупки")
+  }
+
+  System_Boundary(recommendation_services, "Сервисы рекомендаций") {
+      Container(recommendation_service, "Сервис рекомендаций", "Go", "Генерирует персонализированные рекомендации фильмов на основе истории просмотров и предпочтений пользователей")
+      ContainerDb(recommendation_service_db, "База данных рекомендаций", "PostgreSQL", "Хранит данные для генерации рекомендаций")
+      Container(recommendation_consumer_service, "Сервис потребления рекомендаций", "GO", "Потребляет события о просмотренных фильмах и обновляет рекомендаци пользователя")
+
+      Rel(event_bus, recommendation_consumer_service, "Читает события о просмотренных фильмах")
+      Rel(recommendation_consumer_service, watch_history_db, "Читает информацию о просмотренных фильмах")
+      Rel(recommendation_consumer_service, recommendationSystem, "Отправляет запросы на получение рекомендаций фильмов для пользователя")
+      Rel(recommendationSystem, recommendation_service, "Возвращает рекомендации фильмов")
+      Rel(recommendation_consumer_service, recommendation_service_db, "Читает/пишет данные для генерации рекомендаций")
+      Rel(api_gateway, recommendation_service, "Вызывает API для получения рекомендаций фильмов")
+  }
+
+  System_Boundary(catalog_services, "Сервисы каталога фильмов") {
+      Container(catalog_service, "Сервис каталога фильмов", "GO", "Управляет информацией о фильмах, жанрах и рейтингах")
+      ContainerDb(catalog_service_db, "База данных каталога фильмов", "PostgreSQL", "Хранит информацию о фильмах, жанрах и рейтингах")
+      ContainerQueue(catalog_event_bus, "Шина событий каталога фильмов", "Kafka", "Обрабатывает асинхронные события между сервисами каталога фильмов")
+      Container(catalog_partner_api_integration, "Интеграция с API партнеров по контенту", "GO", "Периодически извлекает и обновляет информацию о фильмах от партнеров по контенту")
+      ContainerDb(catalog_partner_db, "База данных партнеров по контенту", "PostgreSQL", "Хранит информацию о фильмах, полученную от партнеров по контенту")
+      Container(catalog_open_source_parsers, "Парсеры открытых источников фильмов", "GO", "Периодически извлекает и обновляет информацию о фильмах из открытых источников")
+      Container(catalog_consumer_service, "Сервис потребления каталога фильмов", "GO", "Потребляет события и обновляет базу данных каталога фильмов")
+
+      Rel(api_gateway, catalog_service, "Вызывает API")
+      Rel(catalog_service, catalog_service_db, "Читает/пишет информацию о фильмах")
+
+      Rel(partner, catalog_partner_api_integration, "Передает информацию о фильмах")
+      Rel(catalog_partner_api_integration, catalog_partner_db, "Получаем данные о партнере")
+      Rel(catalog_partner_api_integration, catalog_event_bus, "Публикует события об обновлении фильмов")
+      Rel(catalog_open_source_parsers, openSourceMovie, "Извлекает информацию о фильмах")
+      Rel(catalog_open_source_parsers, catalog_event_bus, "Публикует события об обновлении фильмов")
+      Rel(catalog_event_bus, catalog_consumer_service, "Читает события об обновлении фильмов")
+      Rel(catalog_consumer_service, catalog_service_db, "Читает/пишет информацию о фильмах")
+      Rel(catalog_consumer_service, event_bus, "Публикует события об обновлении фильмов")
+
+      Rel(catalog_service, event_bus, "Читает события о новых медиафайлах фильмов")
+  }
+
+  System_Boundary(file_storage_services, "Сервис хранения файлов") {
+      Container(file_storage_service, "Сервис хранения файлов", "GO", "Обрабатывает загрузку, хранение и доставку медиафайлов фильмов")
+      ContainerDb(file_metadata_db, "База данных метаданных файлов", "PostgreSQL", "Хранит метаданные медиафайлов фильмов")
+      Container(storage, "Сервис хранения файлов", "MinIO", "Хранит и обслуживает медиафайлы фильмов")
+      Container(sftps_integration_service, "SFTPS интеграционный сервис", "SFTPS сервер", "Обрабатывает загрузку медиафайлов фильмов от партнеров по контенту через SFTPS")
+      Container(proxy_service, "Прокси-сервис доставки файлов", "NGINX", "Обеспечивает эффективную доставку медиафайлов фильмов пользователям через CDN")
+
+      Rel(partner, file_storage_service, "Запрашивает загрузку медиафайлов фильмов")
+      Rel(file_storage_service, partner, "Ссылается на SFTPS интеграционный сервис для загрузки медиафайлов фильмов")
+      Rel(partner, sftps_integration_service, "Загружает медиафайлы фильмов через SFTPS")
+      Rel(sftps_integration_service, storage, "Сохраняет медиафайлы фильмов")
+      Rel(partner, file_storage_service, "Передает метаданные медиафайлов фильмов")
+      Rel(file_storage_service, file_metadata_db, "Читает/пишет метаданные медиафайлов фильмов")
+      Rel(file_storage_service, event_bus, "Публикует события о новых медиафайлах фильмов")
+
+      Rel(mobile_app, proxy_service, "Запрашивает медиафайлы фильмов для пользователей")
+      Rel(tv_app, proxy_service, "Запрашивает медиафайлы фильмов для пользователей")
+      Rel(web_app, proxy_service, "Запрашивает медиафайлы фильмов для пользователей")
+      Rel(proxy_service, storage, "Получает медиафайлы фильмов для пользователей")
+  }
+}
+@enduml
